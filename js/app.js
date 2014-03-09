@@ -1,88 +1,113 @@
+var states = {
+	STILL:0, 
+	READY:1, 
+	THROWING:2, 
+	COOL:3
+}
+
 $(document).ready(function() {
-	var bRyuPosing = false;
+	var eRyuState = states.STILL;
 	var bMouseOverRyu = false;
+	var bXPressed = false;
 	
 	// Make Ryu strike a cool pose when the X key is pressed.
-	// Holding X disables all mouse interactions.
 	$(document)
 		.keydown(function(event) {
-			if (event.which == 88)
-			{
-				bRyuPosing = true;
-				showRyu('cool');
+			// When the X key is held, the X-pressed event fires repeatedly.
+			// Only handle the initial event that fires and not the repeated ones.
+			if (!bXPressed && event.which == 88) {
+				bXPressed = true;
+				eRyuState = states.COOL;
+				showRyu(eRyuState);
 			}
 		})
 		.keyup(function(event) {
-			if (event.which == 88)
-			{
-				bRyuPosing = false;				
-				if (bMouseOverRyu)
-					showRyu('ready');
-				else
-					showRyu('still');
+			if (event.which == 88) {
+				bXPressed = false;				
+				if (eRyuState == states.COOL) {
+					if (bMouseOverRyu) {
+						eRyuState = states.READY;
+					}
+					else {
+						eRyuState = states.STILL;
+					}
+					showRyu(eRyuState);
+				}
 			}
 		});
 		
 	// Mouse event handlers for the Ryu element
-	// These should have no effect when Ryu is striking a pose.
 	$('.ryu')
-		// animate Ryu when mousing over him
+		// animate Ryu when mousing over him, as long as no key is being pressed
 		.mouseenter(function() {
 			bMouseOverRyu = true;
-			if (!bRyuPosing) 
-				showRyu('ready');
+			if (eRyuState != states.COOL) {
+				eRyuState = states.READY;
+				showRyu(eRyuState);
+			}
 		})
 		.mouseleave(function() {
 			bMouseOverRyu = false;
-			if (!bRyuPosing) 
-				showRyu('still');			
+			if (bXPressed) {
+				eRyuState = states.COOL;
+			}
+			else {
+				eRyuState = states.STILL;
+			}
+			showRyu(eRyuState);
 		})
 		// shoot fireball if Ryu is clicked
 		.mousedown(function() {
-			if (!bRyuPosing) {
-				showRyu('throwing');
-				playHadoukenSound();
-				animateHadouken();
-			}
+			eRyuState = states.THROWING;
+			showRyu(eRyuState);	
+			playHadoukenSound();
+			animateHadouken();
 		})
 		.mouseup(function() {
-			if (!bRyuPosing)
-				if (bMouseOverRyu)
-					showRyu('ready');
-				else
-					showRyu('still');
+			if (eRyuState == states.THROWING) {
+				if (bXPressed) {
+					eRyuState = states.COOL;
+				}
+				else if (bMouseOverRyu) {
+					eRyuState = states.READY;
+				}
+				else {
+					eRyuState = states.STILL;
+				}
+				showRyu(eRyuState);
+			}
 		});	
 });
 
 // Show the requested image of Ryu and hide the rest of the images
 function showRyu (style) {
 	switch(style) {
-		case 'still':
+		case states.STILL:
 			$('.ryu-still').show();
 			$('.ryu-ready').hide();
 			$('.ryu-throwing').hide();
 			$('.ryu-cool').hide();
 			break;
-		case 'ready':
+		case states.READY:
 			$('.ryu-still').hide();
 			$('.ryu-ready').show();
 			$('.ryu-throwing').hide();
 			$('.ryu-cool').hide();
 			break;
-		case 'throwing':
+		case states.THROWING:
 			$('.ryu-still').hide();
 			$('.ryu-ready').hide();
 			$('.ryu-throwing').show();
 			$('.ryu-cool').hide();
 			break;
-		case 'cool':
+		case states.COOL:
 			$('.ryu-still').hide();
 			$('.ryu-ready').hide();
 			$('.ryu-throwing').hide();
 			$('.ryu-cool').show();
 			break;
 		default:
-			console.log('error in showRyu(): style \"' + style + '\" unrecognized.');
+			console.log('error in showRyu(): style ' + style + ' unrecognized.');
 	}
 }
 
